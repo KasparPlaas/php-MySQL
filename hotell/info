@@ -1,0 +1,105 @@
+CREATE TABLE IF NOT EXISTS kasutajad (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    kasutajanimi VARCHAR(50) UNIQUE,
+    parool VARCHAR(255),
+    email VARCHAR(100) NOT NULL,
+    email_kinnituskood VARCHAR(32),
+    email_kinnitatud BOOLEAN DEFAULT FALSE,
+    email_koodi_aeg DATETIME DEFAULT NULL;
+    loomis_aeg TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    roll ENUM('admin', 'töötaja', 'klient') DEFAULT 'klient'
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+
+-- 2. Kliendid
+CREATE TABLE IF NOT EXISTS kliendid (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    kasutaja_id INT,
+    eesnimi VARCHAR(50) NOT NULL,
+    perenimi VARCHAR(50) NOT NULL,
+    telefon VARCHAR(20) NOT NULL,
+    isikukood VARCHAR(20),
+    FOREIGN KEY (kasutaja_id) REFERENCES kasutajad(id) ON DELETE CASCADE
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+
+-- 2.1. Külalised
+CREATE TABLE IF NOT EXISTS kylalised (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    eesnimi VARCHAR(50) NOT NULL,
+    perenimi VARCHAR(50) NOT NULL,
+    isikukood VARCHAR(20),
+    telefon VARCHAR(20),
+    email VARCHAR(100) NOT NULL,
+    loodud TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+
+-- 3. Toa tüübid
+CREATE TABLE IF NOT EXISTS toa_tyyp (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    toa_tyyp VARCHAR(50) NOT NULL,
+    toa_hind DECIMAL(10,2) NOT NULL,
+    toa_kirjeldus TEXT,
+    toa_maht INT NOT NULL,
+    toa_pilt VARCHAR(255)
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+
+-- 4. Toad
+CREATE TABLE IF NOT EXISTS toad (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    toa_id INT NOT NULL,
+    toa_nr VARCHAR(10) NOT NULL UNIQUE,
+    toa_korrus INT NOT NULL,
+    FOREIGN KEY (toa_id) REFERENCES toa_tyyp(id)
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+
+-- 5. Teenused
+CREATE TABLE IF NOT EXISTS teenused (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    teenus VARCHAR(50) NOT NULL,
+    hind DECIMAL(10,2) NOT NULL,
+    kirjeldus TEXT
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+
+-- 6. Broneeringud
+CREATE TABLE IF NOT EXISTS broneeringud (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    klient_id INT,
+    kylaline_id INT,
+    toa_id INT NOT NULL,
+    saabumine DATE NOT NULL,
+    lahkumine DATE NOT NULL,
+    loomis_aeg TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    staatus ENUM('ootel', 'kinnitatud', 'tühistatud', 'lõpetatud') DEFAULT 'ootel',
+    FOREIGN KEY (klient_id) REFERENCES kliendid(id) ON DELETE SET NULL,
+    FOREIGN KEY (kylaline_id) REFERENCES kylalised(id) ON DELETE SET NULL,
+    FOREIGN KEY (toa_id) REFERENCES toad(id),
+    CHECK (lahkumine > saabumine),
+    CHECK (
+        (klient_id IS NOT NULL AND kylaline_id IS NULL) OR 
+        (klient_id IS NULL AND kylaline_id IS NOT NULL)
+    )
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+
+-- 7. Broneeringu teenused
+CREATE TABLE IF NOT EXISTS broneeringu_teenused (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    broneering_id INT NOT NULL,
+    teenus_id INT NOT NULL,
+    kogus INT DEFAULT 1,
+    hind DECIMAL(10,2) NOT NULL,
+    lisatud_aeg TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (broneering_id) REFERENCES broneeringud(id) ON DELETE CASCADE,
+    FOREIGN KEY (teenus_id) REFERENCES teenused(id)
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+
+-- 8. Maksed
+CREATE TABLE IF NOT EXISTS maksed (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    broneering_id INT NOT NULL,
+    summa DECIMAL(10,2) NOT NULL,
+    staatus ENUM('ootel', 'tehtud', 'tühistatud') DEFAULT 'ootel',
+    makseviis ENUM('pangaülekanne', 'sularaha', 'krediitkaart'),
+    stripe_id VARCHAR(255),
+    tahtaeg DATE NOT NULL,
+    loomis_aeg TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (broneering_id) REFERENCES broneeringud(id)
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
