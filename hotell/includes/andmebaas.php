@@ -3,7 +3,7 @@
 $server = 'localhost';
 $andmebaas = 'vhost137852s1';
 $kasutaja = 'vhost137852s1';
-$parool = '';
+$parool = 'Passw0rd';
 
 // Loome ühenduse andmebaasiga
 $yhendus = new mysqli($server, $kasutaja, $parool, $andmebaas);

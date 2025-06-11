@@ -9,8 +9,8 @@ define('BASE_URL', 'https://kplaas.ee/hotell');
 
 // E-posti seaded
 define('EMAIL_HOST', 'mail.veebimajutus.ee');
-define('EMAIL_USERNAME', '');
-define('EMAIL_PASSWORD', '');
+define('EMAIL_USERNAME', 'verification@kplaas.ee');
+define('EMAIL_PASSWORD', 'Passw0rd');
 define('EMAIL_PORT', 465);
 
 // Verifitseerimise e-posti seaded

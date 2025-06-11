@@ -1,8 +1,6 @@
 <?php
+session_start();
 ob_start();
-// Eemaldasin automaatse suunamise
-// header("Refresh: 8; URL=../avaleht/");
-
 include("../includes/header.php");
 include("../includes/email.php");
 require '../autentimine/vendor/autoload.php';
@@ -255,6 +253,7 @@ function send_confirmation_email($email, $eesnimi, $perenimi, $broneering_id, $b
                 </div>
             </div>
             
+            <!-- Kuvame broneeringu andmed -->
             <div class="row mb-4">
                 <div class="col-md-6">
                     <div class="card h-100">
@@ -265,7 +264,6 @@ function send_confirmation_email($email, $eesnimi, $perenimi, $broneering_id, $b
                             <p><strong>Nimi:</strong> <?= htmlspecialchars($eesnimi.' '.$perenimi) ?></p>
                             <p><strong>E-post:</strong> <?= htmlspecialchars($email) ?></p>
                             <p><strong>Telefon:</strong> <?= htmlspecialchars($telefon) ?></p>
-                            <p><strong>Isikukood:</strong> <?= htmlspecialchars($isikukood) ?></p>
                         </div>
                     </div>
                 </div>
@@ -273,72 +271,50 @@ function send_confirmation_email($email, $eesnimi, $perenimi, $broneering_id, $b
                 <div class="col-md-6">
                     <div class="card h-100">
                         <div class="card-header bg-light">
-                            <h4 class="mb-0"><i class="bi bi-house me-2"></i>Toa info</h4>
+                            <h4 class="mb-0"><i class="bi bi-house me-2"></i>Broneeringu info</h4>
                         </div>
                         <div class="card-body">
+                            <p><strong>Broneeringu number:</strong> #<?= $broneering_id ?></p>
                             <p><strong>Toa number:</strong> <?= htmlspecialchars($broneering['toa_nr']) ?></p>
                             <p><strong>Toa tüüp:</strong> <?= htmlspecialchars($broneering['toa_tyyp']) ?></p>
                             <p><strong>Saabumine:</strong> <?= date('d.m.Y', strtotime($broneering['saabumine'])) ?></p>
                             <p><strong>Lahkumine:</strong> <?= date('d.m.Y', strtotime($broneering['lahkumine'])) ?></p>
-                            <p><strong>Ööde arv:</strong> <?= $oode_arv ?></p>
                         </div>
                     </div>
                 </div>
             </div>
             
+            <!-- Kuvame makseandmed -->
             <div class="card mb-4">
                 <div class="card-header bg-light">
-                    <h4 class="mb-0"><i class="bi bi-list-check me-2"></i>Hinnakokkutulek</h4>
+                    <h4 class="mb-0"><i class="bi bi-credit-card me-2"></i>Makseandmed</h4>
                 </div>
                 <div class="card-body">
                     <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Kirjeldus</th>
-                                <th class="text-end">Summa</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>Toa hind (<?= $oode_arv ?> ööd)</td>
-                                <td class="text-end"><?= number_format($toa_summa, 2, ',', ' ') ?> €</td>
-                            </tr>
-                            
-                            <?php if (!empty($teenused)): ?>
-                                <tr>
-                                    <td colspan="2"><strong>Lisateenused:</strong></td>
-                                </tr>
-                                <?php foreach ($teenused as $teenus): ?>
-                                    <tr>
-                                        <td><?= htmlspecialchars($teenus['teenus']) ?> (<?= $teenus['kogus'] ?> tk)</td>
-                                        <td class="text-end"><?= number_format($teenus['kogus'] * $teenus['hind'], 2, ',', ' ') ?> €</td>
-                                    </tr>
-                                <?php endforeach; ?>
-                                <tr>
-                                    <td>Teenuste kogusumma</td>
-                                    <td class="text-end"><?= number_format($total_teenused, 2, ',', ' ') ?> €</td>
-                                </tr>
-                            <?php endif; ?>
-                            
-                            <tr>
-                                <td>KM (24%)</td>
-                                <td class="text-end"><?= number_format($km, 2, ',', ' ') ?> €</td>
-                            </tr>
-                            <tr class="table-active">
-                                <td><strong>KOKKU</strong></td>
-                                <td class="text-end"><strong><?= number_format($kokku, 2, ',', ' ') ?> €</strong></td>
-                            </tr>
-                        </tbody>
+                        <tr>
+                            <td><strong>Makseviis:</strong></td>
+                            <td><?= htmlspecialchars($makse['makseviis']) ?></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Makse summa:</strong></td>
+                            <td><?= number_format($kokku, 2, ',', ' ') ?> €</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Makse staatus:</strong></td>
+                            <td>Tasutud</td>
+                        </tr>
                     </table>
                 </div>
             </div>
             
+            <!-- Meili saatmise osa -->
             <?php if ($email_sent): ?>
                 <div class="alert alert-success">
                     <i class="bi bi-check-circle me-2"></i>
                     Kinnitusmeil on saadetud aadressile <strong><?= htmlspecialchars($email) ?></strong>.
                 </div>
             <?php else: ?>
+                <!-- Kui meili ei saadetud, pakume võimalust seda teha -->
                 <div class="alert alert-warning">
                     <i class="bi bi-exclamation-triangle me-2"></i>
                     <?php if (!empty($email_error)): ?>
@@ -350,7 +326,7 @@ function send_confirmation_email($email, $eesnimi, $perenimi, $broneering_id, $b
                 
                 <form method="post" class="mb-4">
                     <div class="input-group">
-                        <input type="email" name="email" class="form-control" placeholder="Sisesta e-posti aadress" value="<?= htmlspecialchars($manual_email ?: $email) ?>" required>
+                        <input type="email" name="email" class="form-control" placeholder="Sisesta e-posti aadress" value="<?= htmlspecialchars($email) ?>" required>
                         <button type="submit" name="send_email" class="btn btn-primary">
                             <i class="bi bi-send me-2"></i>Saada kinnitus
                         </button>
@@ -368,5 +344,7 @@ function send_confirmation_email($email, $eesnimi, $perenimi, $broneering_id, $b
 </div>
 
 <?php
+// Lõpetame sessiooni ja kuvame jalus
+unset($_SESSION['broneering']);
 include("../includes/footer.php");
 ?>
